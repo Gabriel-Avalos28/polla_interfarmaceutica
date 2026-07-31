@@ -21,6 +21,7 @@ export default function Home() {
   const [apuestas, setApuestas] = useState<Record<string, { local: string; vis: string }>>({});
   const [mensaje, setMensaje] = useState('');
   const [ahora, setAhora] = useState(new Date());
+  const [guardados, setGuardados] = useState<Set<string>>(new Set());
 
   const router = useRouter();
 
@@ -51,6 +52,37 @@ export default function Home() {
       } else if (data) {
         setPartidos(data);
       }
+
+      // Cargar predicciones guardadas del usuario
+      const { data: userData } = await supabase
+        .from('usuarios')
+        .select('id')
+        .eq('auth_id', session.user.id)
+        .single();
+        
+      if (userData) {
+        const { data: prediccionesData } = await supabase
+          .from('predicciones')
+          .select('partido_id, goles_local_pred, goles_vis_pred')
+          .eq('usuario_id', userData.id);
+
+        if (prediccionesData) {
+          const yaGuardados = new Set<string>();
+          const apuestasIniciales: Record<string, {local: string, vis: string}> = {};
+          
+          prediccionesData.forEach((pred: any) => {
+            yaGuardados.add(pred.partido_id);
+            apuestasIniciales[pred.partido_id] = {
+              local: pred.goles_local_pred.toString(),
+              vis: pred.goles_vis_pred.toString()
+            };
+          });
+          
+          setGuardados(yaGuardados);
+          setApuestas(apuestasIniciales);
+        }
+      }
+
       setCargando(false);
     }
     init();
@@ -94,10 +126,10 @@ export default function Home() {
 
     // 3. Preparar las predicciones a insertar
     const prediccionesAInsertar = Object.keys(apuestas).map((partidoId) => {
-      // Validar que el partido no haya empezado
+      // Validar que el partido no haya empezado y que no esté ya guardado
       const partido = partidos.find((p) => p.id === partidoId);
-      if (partido && ahora >= new Date(partido.fecha_inicio)) {
-        return null; // Ignorar apuestas en partidos que ya comenzaron
+      if ((partido && ahora >= new Date(partido.fecha_inicio)) || guardados.has(partidoId)) {
+        return null; // Ignorar apuestas en partidos que ya comenzaron o ya están guardadas
       }
 
       return {
@@ -106,7 +138,7 @@ export default function Home() {
         goles_local_pred: parseInt(apuestas[partidoId].local),
         goles_vis_pred: parseInt(apuestas[partidoId].vis)
       };
-    }).filter((p: any) => p !== null && !isNaN(p.goles_local_pred) && !isNaN(p.goles_vis_pred));
+    }).filter((p: any) => p !== null && !isNaN(p.goles_local_pred) && !isNaN(p.goles_vis_pred)) as any[];
 
     if (prediccionesAInsertar.length === 0) {
       setMensaje('Por favor, ingresa al menos un pronóstico.');
@@ -122,6 +154,13 @@ export default function Home() {
       console.error(upsertError);
       setMensaje('Error al guardar pronósticos.');
     } else {
+      // Actualizar el estado de guardados localmente
+      setGuardados(prev => {
+        const nuevos = new Set(prev);
+        prediccionesAInsertar.forEach(p => nuevos.add(p.partido_id));
+        return nuevos;
+      });
+
       confetti({
         particleCount: 100,
         spread: 70,
@@ -187,7 +226,10 @@ export default function Home() {
           <div className="space-y-4">
             {partidos.map((partido) => {
               const fechaInicio = new Date(partido.fecha_inicio);
-              const estaBloqueado = ahora >= fechaInicio;
+              const estaEnJuego = ahora >= fechaInicio;
+              const estaGuardado = guardados.has(partido.id);
+              const estaBloqueado = estaEnJuego || estaGuardado;
+
               const hora = fechaInicio.toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -196,16 +238,18 @@ export default function Home() {
               return (
                 <div
                   key={partido.id}
-                  className={`bg-white rounded-xl shadow-sm border p-4 transition-all duration-300 relative overflow-hidden group ${estaBloqueado ? 'border-red-100 opacity-90' : 'border-slate-200 hover:scale-[1.02] hover:shadow-emerald-500/10 hover:shadow-lg hover:border-emerald-200'}`}
+                  className={`bg-white rounded-xl shadow-sm border p-4 transition-all duration-300 relative overflow-hidden group ${estaBloqueado ? 'border-slate-200 opacity-90' : 'border-slate-200 hover:scale-[1.02] hover:shadow-emerald-500/10 hover:shadow-lg hover:border-emerald-200'}`}
                 >
                   {!estaBloqueado && <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>}
                   
                   {/* Hora del partido */}
                   <div className="text-center text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide flex justify-center items-center gap-2">
                     <span>Sábado • {hora}</span>
-                    {estaBloqueado && (
+                    {estaEnJuego ? (
                       <span className="bg-red-50 text-red-500 border border-red-200 px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-wider animate-pulse">CERRADO</span>
-                    )}
+                    ) : estaGuardado ? (
+                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-wider">GUARDADO</span>
+                    ) : null}
                   </div>
 
                   {/* Enfrentamiento y Marcador */}
