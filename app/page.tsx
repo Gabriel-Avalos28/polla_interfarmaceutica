@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import confetti from 'canvas-confetti';
 
 // Definimos la estructura del partido según tu tabla de Supabase
 interface Partido {
@@ -106,7 +107,17 @@ export default function Home() {
       console.error(upsertError);
       setMensaje('Error al guardar pronósticos.');
     } else {
-      setMensaje('¡Listo! Pronósticos registrados exitosamente.');
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      setMensaje('¡TUS RESULTADOS HAN SIDO GUARDADOS Y ESTÁN LISTOS PARA LA POLLA INTERFARMACÉUTICA! 🏆🍀');
+      
+      // Limpiar mensaje después de 4 segundos
+      setTimeout(() => {
+        setMensaje('');
+      }, 4000);
     }
   };
 
@@ -129,7 +140,7 @@ export default function Home() {
 
       {/* Contenedor adaptado 100% a celular (máximo ancho del móvil centrado en PC) */}
       <div className="max-w-md mx-auto px-4 mt-6">
-        
+
         {/* Banner llamativo pero elegante */}
         <div className="bg-white rounded-2xl p-5 mb-6 shadow-md border-l-4 border-emerald-500 relative overflow-hidden animate-fade-in-up">
           <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-emerald-50 opacity-80 rounded-full blur-2xl"></div>
@@ -217,16 +228,21 @@ export default function Home() {
           </div>
         )}
 
-        {/* Botón flotante al estilo App para guardar apuesta */}
-        <div className="mt-6">
+        <div className="mt-6 relative">
           <button
             onClick={guardarPronosticos}
             className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-4 px-4 rounded-xl shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 text-sm uppercase tracking-wide animate-pulse hover:animate-none"
           >
             Guardar mis pronósticos
           </button>
+          
+          {/* Mensaje Flotante Mejorado */}
           {mensaje && (
-            <p className="text-center text-xs font-medium text-emerald-700 mt-2">{mensaje}</p>
+            <div className="absolute -top-16 left-0 right-0 animate-fade-in-up">
+              <div className="bg-emerald-800 text-white text-xs font-bold p-3 rounded-lg shadow-xl border border-emerald-500 text-center uppercase tracking-wide">
+                {mensaje}
+              </div>
+            </div>
           )}
         </div>
       </div>

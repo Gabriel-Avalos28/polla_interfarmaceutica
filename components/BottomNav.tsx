@@ -30,6 +30,14 @@ export default function BottomNav() {
           <span className="text-[10px] font-medium">Partidos</span>
         </Link>
 
+        {/* Pestaña Historial */}
+        <Link href="/historial" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === '/historial' ? 'text-emerald-600' : 'text-slate-400 hover:text-emerald-500'}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-[10px] font-medium">Historial</span>
+        </Link>
+
         {/* Pestaña Ranking */}
         <Link href="/ranking" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === '/ranking' ? 'text-emerald-600' : 'text-slate-400 hover:text-emerald-500'}`}>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
