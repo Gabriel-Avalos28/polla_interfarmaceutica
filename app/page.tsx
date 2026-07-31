@@ -111,7 +111,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 pb-20 font-sans">
+    <main className="min-h-screen bg-transparent pb-20 font-sans">
       {/* Barra superior estilo App Móvil */}
       <header className="bg-gradient-to-r from-emerald-700 to-emerald-500 p-4 md:p-6 shadow-md sticky top-0 z-10 text-white rounded-b-3xl mb-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
@@ -130,15 +130,19 @@ export default function Home() {
       {/* Contenedor adaptado 100% a celular (máximo ancho del móvil centrado en PC) */}
       <div className="max-w-md mx-auto px-4 mt-6">
         
-        {/* Banner llamativo */}
-        <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-4 mb-6 shadow-lg text-white border border-orange-300 relative overflow-hidden animate-fade-in-up">
-          <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-white opacity-10 rounded-full blur-xl"></div>
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="text-4xl animate-bounce drop-shadow-md">🏆</div>
+        {/* Banner llamativo pero elegante */}
+        <div className="bg-white rounded-2xl p-5 mb-6 shadow-md border-l-4 border-emerald-500 relative overflow-hidden animate-fade-in-up">
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-emerald-50 opacity-80 rounded-full blur-2xl"></div>
+          <div className="flex items-start gap-4 relative z-10">
+            <div className="text-4xl animate-bounce drop-shadow-sm mt-1">🏆</div>
             <div>
-              <h3 className="font-extrabold text-sm uppercase tracking-wider drop-shadow-sm">¡Demuestra que eres el mejor!</h3>
-              <p className="text-xs font-medium mt-1 leading-snug drop-shadow-sm">
-                Acierta a tus pronósticos, compite por la cima del podio y <strong className="text-yellow-100 uppercase">¡gana premios increíbles!</strong> 🎁✨
+              <h3 className="font-extrabold text-sm uppercase tracking-wider text-emerald-800">¿Cómo ganar puntos?</h3>
+              <ul className="text-xs font-medium mt-2 text-slate-600 space-y-1.5">
+                <li className="flex items-center gap-1.5">🎯 <span><strong className="text-emerald-700">Acierta el marcador exacto:</strong> Ganas 3 pts.</span></li>
+                <li className="flex items-center gap-1.5">⚽ <span><strong className="text-emerald-700">Acierta quién gana/empata:</strong> Ganas 1 pt.</span></li>
+              </ul>
+              <p className="text-[10px] mt-2.5 text-emerald-600 font-bold uppercase tracking-wider bg-emerald-50 inline-block px-2 py-1 rounded-md border border-emerald-100">
+                ¡Suma puntos y gana premios increíbles! 🎁
               </p>
             </div>
           </div>

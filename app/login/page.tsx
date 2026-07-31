@@ -74,7 +74,7 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 flex items-center justify-center p-4 pt-16 font-sans relative">
+    <main className="min-h-screen bg-transparent flex items-center justify-center p-4 pt-16 font-sans relative">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl relative z-10">
         {/* Mascota asomándose */}
         <div className="flex justify-center -mt-12 relative z-10">
@@ -90,6 +90,13 @@ export default function Login() {
         <div className="bg-gradient-to-r from-emerald-700 to-emerald-500 p-6 pt-10 -mt-12 text-center text-white relative rounded-t-2xl">
           <h1 className="font-extrabold text-2xl tracking-tight drop-shadow-md">Torneo Interfarmacéutico Clarel 2026</h1>
           <p className="text-emerald-100 mt-1 font-medium">Polla Interfarmacéutica</p>
+        </div>
+
+        {/* Mensaje Breve */}
+        <div className="bg-emerald-50 px-6 py-4 border-b border-emerald-100 text-center">
+          <p className="text-[13px] text-emerald-800 font-medium leading-relaxed">
+            Acierta tus pronósticos, compite en el ranking y <strong className="text-emerald-700">¡gana premios increíbles!</strong> ⚽🏆
+          </p>
         </div>
 
         {/* Formulario */}
