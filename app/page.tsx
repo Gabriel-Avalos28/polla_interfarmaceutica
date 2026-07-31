@@ -1,65 +1,214 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+
+// Definimos la estructura del partido según tu tabla de Supabase
+interface Partido {
+  id: string;
+  jornada: number;
+  equipo_local: string;
+  equipo_vis: string;
+  fecha_inicio: string;
+}
 
 export default function Home() {
+  const [partidos, setPartidos] = useState<Partido[]>([]);
+  const [cargando, setCargando] = useState(true);
+  // Almacenamos lo que el usuario digita en los inputs: { partido_id: { local: number, vis: number } }
+  const [apuestas, setApuestas] = useState<Record<string, { local: string; vis: string }>>({});
+  const [mensaje, setMensaje] = useState('');
+
+  const router = useRouter();
+
+  // 1. Verificar sesión y cargar partidos
+  useEffect(() => {
+    async function init() {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      // Si hay sesión, cargar partidos
+      const { data, error } = await supabase
+        .from('partidos')
+        .select('*')
+        .order('fecha_inicio', { ascending: true });
+
+      if (error) {
+        console.error('Error cargando partidos:', error);
+      } else if (data) {
+        setPartidos(data);
+      }
+      setCargando(false);
+    }
+    init();
+  }, [router]);
+
+  // Manejar cambios en las cajas de goles
+  const handleCambioGol = (partidoId: string, tipo: 'local' | 'vis', valor: string) => {
+    setApuestas((prev) => ({
+      ...prev,
+      [partidoId]: {
+        ...prev[partidoId],
+        [tipo]: valor,
+      },
+    }));
+  };
+
+  // 2. Guardar pronósticos
+  const guardarPronosticos = async () => {
+    setMensaje('Guardando tus pronósticos...');
+
+    // 1. Obtener la sesión actual
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setMensaje('Error: Debes iniciar sesión.');
+      return;
+    }
+
+    // 2. Obtener el ID interno del usuario
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('id')
+      .eq('auth_id', session.user.id)
+      .single();
+
+    if (userError || !userData) {
+      setMensaje('Error: No se encontró tu perfil.');
+      return;
+    }
+
+    const usuario_id = userData.id;
+
+    // 3. Preparar las predicciones a insertar
+    const prediccionesAInsertar = Object.keys(apuestas).map((partidoId) => ({
+      usuario_id,
+      partido_id: partidoId,
+      goles_local_pred: parseInt(apuestas[partidoId].local),
+      goles_vis_pred: parseInt(apuestas[partidoId].vis)
+    })).filter(p => !isNaN(p.goles_local_pred) && !isNaN(p.goles_vis_pred));
+
+    if (prediccionesAInsertar.length === 0) {
+      setMensaje('Por favor, ingresa al menos un pronóstico.');
+      return;
+    }
+
+    // 4. Insertar en Supabase (upsert para actualizar si ya existe)
+    const { error: upsertError } = await supabase
+      .from('predicciones')
+      .upsert(prediccionesAInsertar, { onConflict: 'usuario_id, partido_id' });
+
+    if (upsertError) {
+      console.error(upsertError);
+      setMensaje('Error al guardar pronósticos.');
+    } else {
+      setMensaje('¡Listo! Pronósticos registrados exitosamente.');
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-slate-100 pb-20 font-sans">
+      {/* Barra superior estilo App Móvil */}
+      <header className="bg-gradient-to-r from-emerald-700 to-emerald-500 p-4 md:p-6 shadow-md sticky top-0 z-10 text-white rounded-b-3xl mb-6 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+        <div className="max-w-md mx-auto flex justify-between items-center relative z-10">
+          <div className="flex items-center gap-3">
+            <img src="/mascota.png" alt="Mascota" className="w-16 h-16 md:w-20 md:h-20 rounded-full border-[3px] border-white object-cover shadow-md bg-white" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+            <div>
+              <h1 className="font-extrabold text-lg md:text-xl tracking-tight drop-shadow-sm leading-tight">Torneo Interfarmacéutico<br />Clarel 2026</h1>
+              <p className="text-[10px] md:text-xs text-emerald-100 font-medium uppercase tracking-wider mt-0.5">Polla Interfarmacéutica</p>
+            </div>
+          </div>
+          <img src="/logo.png" alt="M&P Eventos" className="h-12 md:h-16 object-contain mix-blend-multiply opacity-95" onError={(e) => { e.currentTarget.style.display = 'none' }} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      {/* Contenedor adaptado 100% a celular (máximo ancho del móvil centrado en PC) */}
+      <div className="max-w-md mx-auto px-4 mt-6">
+        <div className="mb-4">
+          <h2 className="text-slate-800 font-bold text-base">Partidos de este Sábado</h2>
+          <p className="text-slate-500 text-xs">Ingresa tu pronóstico de goles antes de cada juego</p>
         </div>
-      </main>
-    </div>
+
+        {cargando ? (
+          <div className="text-center py-10 text-slate-500 text-sm">Cargando partidos...</div>
+        ) : (
+          <div className="space-y-4">
+            {partidos.map((partido) => {
+              const hora = new Date(partido.fecha_inicio).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              });
+
+              return (
+                <div
+                  key={partido.id}
+                  className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-emerald-500/10 hover:shadow-lg hover:border-emerald-200 relative overflow-hidden group"
+                >
+                  <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  {/* Hora del partido */}
+                  <div className="text-center text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">
+                    Sábado • {hora}
+                  </div>
+
+                  {/* Enfrentamiento y Marcador */}
+                  <div className="flex items-center justify-between gap-2">
+                    {/* Equipo Local */}
+                    <div className="flex-1 text-right font-medium text-slate-800 text-sm">
+                      {partido.equipo_local}
+                    </div>
+
+                    {/* Controles de Goles (Fáciles de tocar con el dedo) */}
+                    <div className="flex items-center gap-1 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200">
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        placeholder="-"
+                        value={apuestas[partido.id]?.local || ''}
+                        onChange={(e) => handleCambioGol(partido.id, 'local', e.target.value)}
+                        className="w-10 h-10 text-center font-bold text-lg bg-white border border-slate-300 rounded focus:outline-none focus:border-emerald-500 text-slate-800"
+                      />
+                      <span className="text-slate-400 font-bold">:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        placeholder="-"
+                        value={apuestas[partido.id]?.vis || ''}
+                        onChange={(e) => handleCambioGol(partido.id, 'vis', e.target.value)}
+                        className="w-10 h-10 text-center font-bold text-lg bg-white border border-slate-300 rounded focus:outline-none focus:border-emerald-500 text-slate-800"
+                      />
+                    </div>
+
+                    {/* Equipo Visitante */}
+                    <div className="flex-1 text-left font-medium text-slate-800 text-sm">
+                      {partido.equipo_vis}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Botón flotante al estilo App para guardar apuesta */}
+        <div className="mt-6">
+          <button
+            onClick={guardarPronosticos}
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-4 px-4 rounded-xl shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 text-sm uppercase tracking-wide animate-pulse hover:animate-none"
+          >
+            Guardar mis pronósticos
+          </button>
+          {mensaje && (
+            <p className="text-center text-xs font-medium text-emerald-700 mt-2">{mensaje}</p>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
