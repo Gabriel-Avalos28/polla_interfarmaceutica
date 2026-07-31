@@ -129,9 +129,26 @@ export default function Home() {
 
       {/* Contenedor adaptado 100% a celular (máximo ancho del móvil centrado en PC) */}
       <div className="max-w-md mx-auto px-4 mt-6">
-        <div className="mb-4">
-          <h2 className="text-slate-800 font-bold text-base">Partidos de este Sábado</h2>
-          <p className="text-slate-500 text-xs">Ingresa tu pronóstico de goles antes de cada juego</p>
+        
+        {/* Banner llamativo */}
+        <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-4 mb-6 shadow-lg text-white border border-orange-300 relative overflow-hidden animate-fade-in-up">
+          <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-white opacity-10 rounded-full blur-xl"></div>
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="text-4xl animate-bounce drop-shadow-md">🏆</div>
+            <div>
+              <h3 className="font-extrabold text-sm uppercase tracking-wider drop-shadow-sm">¡Demuestra que eres el mejor!</h3>
+              <p className="text-xs font-medium mt-1 leading-snug drop-shadow-sm">
+                Acierta a tus pronósticos, compite por la cima del podio y <strong className="text-yellow-100 uppercase">¡gana premios increíbles!</strong> 🎁✨
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-slate-800 font-extrabold text-base uppercase tracking-tight">Partidos de este Sábado</h2>
+            <p className="text-slate-500 text-[11px] uppercase tracking-wide mt-0.5">Ingresa tus goles antes del pitazo inicial</p>
+          </div>
         </div>
 
         {cargando ? (
