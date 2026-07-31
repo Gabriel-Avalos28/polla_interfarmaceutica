@@ -20,8 +20,15 @@ export default function Home() {
   // Almacenamos lo que el usuario digita en los inputs: { partido_id: { local: number, vis: number } }
   const [apuestas, setApuestas] = useState<Record<string, { local: string; vis: string }>>({});
   const [mensaje, setMensaje] = useState('');
+  const [ahora, setAhora] = useState(new Date());
 
   const router = useRouter();
+
+  useEffect(() => {
+    // Actualizar la hora cada minuto para bloquear partidos en tiempo real
+    const timer = setInterval(() => setAhora(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 1. Verificar sesión y cargar partidos
   useEffect(() => {
@@ -86,12 +93,20 @@ export default function Home() {
     const usuario_id = userData.id;
 
     // 3. Preparar las predicciones a insertar
-    const prediccionesAInsertar = Object.keys(apuestas).map((partidoId) => ({
-      usuario_id,
-      partido_id: partidoId,
-      goles_local_pred: parseInt(apuestas[partidoId].local),
-      goles_vis_pred: parseInt(apuestas[partidoId].vis)
-    })).filter(p => !isNaN(p.goles_local_pred) && !isNaN(p.goles_vis_pred));
+    const prediccionesAInsertar = Object.keys(apuestas).map((partidoId) => {
+      // Validar que el partido no haya empezado
+      const partido = partidos.find((p) => p.id === partidoId);
+      if (partido && ahora >= new Date(partido.fecha_inicio)) {
+        return null; // Ignorar apuestas en partidos que ya comenzaron
+      }
+
+      return {
+        usuario_id,
+        partido_id: partidoId,
+        goles_local_pred: parseInt(apuestas[partidoId].local),
+        goles_vis_pred: parseInt(apuestas[partidoId].vis)
+      };
+    }).filter((p: any) => p !== null && !isNaN(p.goles_local_pred) && !isNaN(p.goles_vis_pred));
 
     if (prediccionesAInsertar.length === 0) {
       setMensaje('Por favor, ingresa al menos un pronóstico.');
@@ -171,7 +186,9 @@ export default function Home() {
         ) : (
           <div className="space-y-4">
             {partidos.map((partido) => {
-              const hora = new Date(partido.fecha_inicio).toLocaleTimeString([], {
+              const fechaInicio = new Date(partido.fecha_inicio);
+              const estaBloqueado = ahora >= fechaInicio;
+              const hora = fechaInicio.toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
               });
@@ -179,12 +196,16 @@ export default function Home() {
               return (
                 <div
                   key={partido.id}
-                  className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-emerald-500/10 hover:shadow-lg hover:border-emerald-200 relative overflow-hidden group"
+                  className={`bg-white rounded-xl shadow-sm border p-4 transition-all duration-300 relative overflow-hidden group ${estaBloqueado ? 'border-red-100 opacity-90' : 'border-slate-200 hover:scale-[1.02] hover:shadow-emerald-500/10 hover:shadow-lg hover:border-emerald-200'}`}
                 >
-                  <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  {!estaBloqueado && <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>}
+                  
                   {/* Hora del partido */}
-                  <div className="text-center text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">
-                    Sábado • {hora}
+                  <div className="text-center text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide flex justify-center items-center gap-2">
+                    <span>Sábado • {hora}</span>
+                    {estaBloqueado && (
+                      <span className="bg-red-50 text-red-500 border border-red-200 px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-wider animate-pulse">CERRADO</span>
+                    )}
                   </div>
 
                   {/* Enfrentamiento y Marcador */}
@@ -195,15 +216,16 @@ export default function Home() {
                     </div>
 
                     {/* Controles de Goles (Fáciles de tocar con el dedo) */}
-                    <div className="flex items-center gap-1 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200">
+                    <div className={`flex items-center gap-1 px-2 py-1.5 rounded-lg border ${estaBloqueado ? 'bg-slate-100 border-slate-200' : 'bg-slate-50 border-slate-200'}`}>
                       <input
                         type="number"
                         min="0"
                         max="99"
                         placeholder="-"
+                        disabled={estaBloqueado}
                         value={apuestas[partido.id]?.local || ''}
                         onChange={(e) => handleCambioGol(partido.id, 'local', e.target.value)}
-                        className="w-10 h-10 text-center font-bold text-lg bg-white border border-slate-300 rounded focus:outline-none focus:border-emerald-500 text-slate-800"
+                        className={`w-10 h-10 text-center font-bold text-lg border rounded focus:outline-none ${estaBloqueado ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white border-slate-300 text-slate-800 focus:border-emerald-500'}`}
                       />
                       <span className="text-slate-400 font-bold">:</span>
                       <input
@@ -211,9 +233,10 @@ export default function Home() {
                         min="0"
                         max="99"
                         placeholder="-"
+                        disabled={estaBloqueado}
                         value={apuestas[partido.id]?.vis || ''}
                         onChange={(e) => handleCambioGol(partido.id, 'vis', e.target.value)}
-                        className="w-10 h-10 text-center font-bold text-lg bg-white border border-slate-300 rounded focus:outline-none focus:border-emerald-500 text-slate-800"
+                        className={`w-10 h-10 text-center font-bold text-lg border rounded focus:outline-none ${estaBloqueado ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white border-slate-300 text-slate-800 focus:border-emerald-500'}`}
                       />
                     </div>
 
