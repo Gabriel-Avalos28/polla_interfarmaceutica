@@ -81,6 +81,37 @@ export default function AdminPage() {
     init();
   }, [router]);
 
+  const cargarProgramacion15Agosto = async () => {
+    setMensaje('Cargando programación del 15 de Agosto...');
+    const nuevosPartidos = [
+      // FEMENINO (Jornada 21)
+      { jornada: 21, equipo_local: 'FARMAENLACE', equipo_vis: 'BOEHRINGER', fecha_inicio: '2026-08-15T15:20:00+00:00' },
+      { jornada: 21, equipo_local: 'LIFE', equipo_vis: 'INPEL QUALITY', fecha_inicio: '2026-08-15T16:30:00+00:00' },
+      { jornada: 21, equipo_local: 'JAMES BROWN', equipo_vis: 'FARBIOPHARMA', fecha_inicio: '2026-08-15T17:40:00+00:00' },
+      { jornada: 21, equipo_local: 'ROCHE', equipo_vis: 'MEGALABS', fecha_inicio: '2026-08-15T18:50:00+00:00' },
+      // MASCULINO CANCHA 1 (Jornada 22)
+      { jornada: 22, equipo_local: 'LIFE', equipo_vis: 'SIEGFRIED', fecha_inicio: '2026-08-15T15:20:00+00:00' },
+      { jornada: 22, equipo_local: 'JAMES BROWN', equipo_vis: 'GRUPO FARMA', fecha_inicio: '2026-08-15T16:30:00+00:00' },
+      { jornada: 22, equipo_local: 'ROCHE', equipo_vis: 'BOEHRINGER', fecha_inicio: '2026-08-15T17:40:00+00:00' },
+      { jornada: 22, equipo_local: 'B BRAUN', equipo_vis: 'NAOS', fecha_inicio: '2026-08-15T18:50:00+00:00' },
+      // MASCULINO CANCHA 2 (Jornada 23)
+      { jornada: 23, equipo_local: 'CLAREL TRADE', equipo_vis: 'BAGO', fecha_inicio: '2026-08-15T15:20:00+00:00' },
+      { jornada: 23, equipo_local: 'FARMAENLACE', equipo_vis: 'FARBIOPHARMA', fecha_inicio: '2026-08-15T16:30:00+00:00' },
+      { jornada: 23, equipo_local: 'MEGALABS', equipo_vis: 'ADIUM', fecha_inicio: '2026-08-15T17:40:00+00:00' },
+      { jornada: 23, equipo_local: 'QUALIPHARM', equipo_vis: 'PHYTOCHEMIE', fecha_inicio: '2026-08-15T18:50:00+00:00' },
+      { jornada: 23, equipo_local: 'ASO. QUIMICOS', equipo_vis: 'GRUNENTHAL', fecha_inicio: '2026-08-15T20:00:00+00:00' }
+    ];
+
+    try {
+      const { error } = await supabase.from('partidos').insert(nuevosPartidos);
+      if (error) throw error;
+      setMensaje('¡Programación cargada con éxito! Recarga la página.');
+    } catch (err: any) {
+      console.error(err);
+      setMensaje('Error al cargar la programación: ' + err.message);
+    }
+  };
+
   const handleCambioGol = (partidoId: string, tipo: 'local' | 'vis', valor: string) => {
     setResultados(prev => ({
       ...prev,
@@ -211,6 +242,15 @@ export default function AdminPage() {
             {mensaje}
           </div>
         )}
+
+        <div className="mb-6">
+          <button 
+            onClick={cargarProgramacion15Agosto}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-colors"
+          >
+            Insertar Partidos del 15 de Agosto
+          </button>
+        </div>
 
         <div className="space-y-6">
           {partidos.map(partido => (
