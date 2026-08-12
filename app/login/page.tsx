@@ -62,7 +62,7 @@ export default function Login() {
             throw new Error('Cuenta creada, pero hubo un error al guardar tu perfil.');
           }
 
-          setMessage('¡Registro exitoso! Revisa tu correo (si activaste confirmación) o inicia sesión.');
+          setMessage('Registro Exitoso, ahora ya solo tendrás que iniciar sesión');
           setIsLogin(true);
         }
       }
